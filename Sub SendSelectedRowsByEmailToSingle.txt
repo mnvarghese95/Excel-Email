@@ -1,0 +1,85 @@
+Sub SendSelectedRowsByEmailToSingleRecipientWithSemicolons()
+    Dim OutApp As Object
+    Dim OutMail As Object
+    Dim Cell As Range
+    Dim SelectedRange As Range
+    Dim MailSubject As String
+    Dim MailBody As String
+    Dim RecipientCells As Range
+    Dim RecipientCell As Range
+    Dim RecipientEmails As String
+    Dim RecipientAddresses As String
+    Dim i As Integer
+    
+    ' Prompt the user to select the cells containing recipient email addresses
+    On Error Resume Next
+    Set RecipientCells = Application.InputBox("Select the cells containing recipient email addresses separated by semicolons:", Type:=8)
+    On Error GoTo 0
+    
+    ' Check if cells were selected for recipient email addresses
+    If RecipientCells Is Nothing Then
+        MsgBox "No recipient email cells selected. Exiting macro.", vbExclamation
+        Exit Sub
+    End If
+    
+    ' Loop through each selected cell and retrieve email addresses
+    For Each RecipientCell In RecipientCells
+        ' Get the recipient email addresses from the current cell
+        RecipientEmails = RecipientCell.Value
+        
+        ' Check if recipient email addresses were entered
+        If RecipientEmails <> "" Then
+            RecipientAddresses = RecipientAddresses & RecipientEmails & ";"
+        End If
+    Next RecipientCell
+    
+    ' Remove trailing semicolon
+    If Right(RecipientAddresses, 1) = ";" Then
+        RecipientAddresses = Left(RecipientAddresses, Len(RecipientAddresses) - 1)
+    End If
+    
+    ' Check if any cells are selected
+    If TypeName(Selection) <> "Range" Then
+        MsgBox "Please select cells before running this macro.", vbExclamation
+        Exit Sub
+    End If
+    
+    Set SelectedRange = Selection
+    MailSubject = "Selected Rows Data"
+    
+    ' Build the email body with selected rows using HTML formatting
+    MailBody = "<html><body><p>Hello,<br><br>Please find the data from selected rows below:</p>"
+    MailBody = MailBody & "<table style=""border-collapse: collapse; border: 1px solid black;"" cellpadding=""5"">"
+    
+    For Each Row In SelectedRange.Rows
+        MailBody = MailBody & "<tr>"
+        For Each Cell In Row.Cells
+            MailBody = MailBody & "<td style=""border: 1px solid black;"">" & Cell.Value & "</td>"
+        Next Cell
+        MailBody = MailBody & "</tr>"
+    Next Row
+    
+    MailBody = MailBody & "</table></body></html>"
+    
+    On Error Resume Next
+    Set OutApp = GetObject(, "Outlook.Application")
+    On Error GoTo 0
+    
+    If OutApp Is Nothing Then
+        Set OutApp = CreateObject("Outlook.Application")
+    End If
+    
+    On Error Resume Next
+    Set OutMail = OutApp.CreateItem(0)
+    On Error GoTo 0
+    
+    With OutMail
+        .To = RecipientAddresses
+        .Subject = MailSubject
+        .HTMLBody = MailBody
+        .Display ' Change to .Send if you want to automatically send the email
+    End With
+    
+    Set OutMail = Nothing
+    Set OutApp = Nothing
+End Sub
