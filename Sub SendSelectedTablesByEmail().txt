@@ -1,0 +1,101 @@
+Sub SendSelectedTablesByEmail()
+    Dim OutApp As Object
+    Dim OutMail As Object
+    Dim Cell As Range
+    Dim TableRange1 As Range
+    Dim TableRange2 As Range
+    Dim MailSubject As String
+    Dim MailBody As String
+    Dim RecipientCell As Range
+    Dim RecipientEmails As String
+    Dim i As Integer
+    
+    ' Prompt the user to select the cells containing recipient email addresses
+    On Error Resume Next
+    Set RecipientCell = Application.InputBox("Select the cell containing recipient email addresses separated by commas:", Type:=8)
+    On Error GoTo 0
+    
+    ' Check if a cell was selected for recipient email addresses
+    If RecipientCell Is Nothing Then
+        MsgBox "No recipient email cell selected. Exiting macro.", vbExclamation
+        Exit Sub
+    End If
+    
+    ' Get the recipient email addresses
+    RecipientEmails = RecipientCell.Value
+    
+    ' Check if any cells are selected for the first table
+    If TypeName(Selection) <> "Range" Then
+        MsgBox "Please select cells for the first table before running this macro.", vbExclamation
+        Exit Sub
+    End If
+    
+    ' Store the selected range for the first table
+    Set TableRange1 = Selection
+    
+    ' Prompt the user to select cells for the second table
+    On Error Resume Next
+    Set TableRange2 = Application.InputBox("Select cells for the second table:", Type:=8)
+    On Error GoTo 0
+    
+    ' Check if any cells were selected for the second table
+    If TableRange2 Is Nothing Then
+        MsgBox "No cells selected for the second table. Exiting macro.", vbExclamation
+        Exit Sub
+    End If
+    
+    ' Build the email body with both tables using HTML formatting
+    MailSubject = "Selected Tables Data"
+    MailBody = "<html><body><p>Hello,<br><br>Please find the data from selected tables below:</p>"
+    
+    ' Table 1
+    MailBody = MailBody & "<h3>Table 1</h3>"
+    MailBody = MailBody & "<table style=""border-collapse: collapse; border: 1px solid black;"" cellpadding=""5"">"
+    
+    For Each Row In TableRange1.Rows
+        MailBody = MailBody & "<tr>"
+        For Each Cell In Row.Cells
+            MailBody = MailBody & "<td style=""border: 1px solid black;"">" & Cell.Value & "</td>"
+        Next Cell
+        MailBody = MailBody & "</tr>"
+    Next Row
+    
+    MailBody = MailBody & "</table>"
+    
+    ' Table 2
+    MailBody = MailBody & "<h3>Table 2</h3>"
+    MailBody = MailBody & "<table style=""border-collapse: collapse; border: 1px solid black;"" cellpadding=""5"">"
+    
+    For Each Row In TableRange2.Rows
+        MailBody = MailBody & "<tr>"
+        For Each Cell In Row.Cells
+            MailBody = MailBody & "<td style=""border: 1px solid black;"">" & Cell.Value & "</td>"
+        Next Cell
+        MailBody = MailBody & "</tr>"
+    Next Row
+    
+    MailBody = MailBody & "</table></body></html>"
+    
+    On Error Resume Next
+    Set OutApp = GetObject(, "Outlook.Application")
+    On Error GoTo 0
+    
+    If OutApp Is Nothing Then
+        Set OutApp = CreateObject("Outlook.Application")
+    End If
+    
+    On Error Resume Next
+    Set OutMail = OutApp.CreateItem(0)
+    On Error GoTo 0
+    
+    With OutMail
+        .To = RecipientEmails
+        .Subject = MailSubject
+        .HTMLBody = MailBody
+        .Display ' Change to .Send if you want to automatically send the email
+    End With
+    
+    Set OutMail = Nothing
+    Set OutApp = Nothing
+End Sub
+
